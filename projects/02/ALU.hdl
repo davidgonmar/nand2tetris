@@ -41,27 +41,27 @@ CHIP ALU {
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
-    Mux16(a=x, b=false, sel=zx, out=x1);
-	Not16(in=x1, out=notX1);
-	Mux16(a=x1, b=notX1, sel=nx, out=x2);
+    Mux16(a=x, b[0..15]=false, sel=zx, out=maybeZeroMaybeX);
+	Not16(in=maybeZeroMaybeX, out=notX);
+	Mux16(a=maybeZeroMaybeX, b=notX, sel=nx, out=xDef);
 	
-	Mux16(a=y, b=false, sel=zy, out=y1);
-	Not16(in=y1, out=notY1);
-	Mux16(a=y1, b=notY1, sel=ny, out=y2);
+	Mux16(a=y, b[0..15]=false, sel=zy, out=maybeZeroMaybeY);
+	Not16(in=maybeZeroMaybeY, out=notY);
+	Mux16(a=maybeZeroMaybeY, b=notY, sel=ny, out=yDef);
 	
-	Add16(a=x2, b=y2, out=xPlusY);
-	And16(a=x2, b=y2, out=xAndY);
-	Mux16(a=xAndY, b=xPlusY, sel=f, out=out1);
+	Add16(a=xDef, b=yDef, out=addXY);
+	And16(a=xDef, b=yDef, out=andXY);
 	
-	Not16(in=out1, out=notOut1);
+	Mux16(a=andXY, b=addXY, sel=f, out=outNormal);
 	
-	Mux16(a=out1, b=notOut1, sel=no, out[0..7]=outLSB0, out[8..14]=outLSB1, out[15]=outMSB);
+	Not16(in=outNormal, out=notOut);
+	Mux16(a=outNormal, b=notOut, sel=no, out=out, out[0..7]=outCopyF, out[8..15]=outCopyS, out[15]=ng);
 	
-	Or16(a[0..7]=outLSB0, a[8..14]=outLSB1, a[15]=outMSB, b=false, out=out);
+	Or8Way(in=outCopyF, out=outIsNotZeroFirst);
+	Or8Way(in=outCopyS, out=outIsNotZeroSecond);
+	Or(a=outIsNotZeroFirst, b=outIsNotZeroSecond, out=outIsNotZero);
+	Not(in=outIsNotZero, out=zr);
 	
-	Or(a=outMSB, b=false, out=ng);
-	Or8Way(in=outLSB0, out=zr1);
-	Or8Way(in[0..6]=outLSB1, in[7]=outMSB, out=zr2);
-	Or(a=zr1, b=zr2, out=zr3);
-	Not(in=zr3, out=zr);
+	
+	
 }
